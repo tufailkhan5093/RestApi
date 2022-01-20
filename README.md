@@ -1,29 +1,49 @@
-
-```php
-//You can also determine if a user has any of a given list of roles:
-$user->hasRole('writer');
-$user->hasAnyRole(['writer', 'reader']);
-
-//You can determine if a role has a certain permission:
-$user->hasPermissionTo('edit articles');
-
-//You can check if a user has Any of an array of permissions:
-$user->hasAnyPermission(['edit articles', 'publish articles', 'unpublish articles']);
-
-//if a user has All of an array of permissions:
-$user->hasAllPermissions(['edit articles', 'publish articles', 'unpublish articles']);
-
-
-
-
-// get a list of all permissions directly assigned to the user
-$permissionNames = $user->getPermissionNames(); // collection of name strings
-$permissions = $user->permissions; // collection of permission objects
-
-// get all permissions for the user
-$permissions = $user->getAllPermissions();
-
-// get the names of the user's roles
-$roles = $user->getRoleNames(); // Returns a collection
-```
-
+public static function getOnlineDrivers(Request $request){
+        $online_drivers = file_get_contents('https://care-provider-97352-default-rtdb.firebaseio.com/online_driver/.json');
+        $online_drivers = json_decode($online_drivers);
+        
+        $arr=array();
+        // remove object node to array
+        foreach($online_drivers as $online_driver){
+           
+             $response = Http::get('https://maps.googleapis.com/maps/api/directions/json?mode=driving&transit_routing_preference=less_driving&origin='.$request->origin_lat.','.$request->origin_long.'&destination='.$online_driver->lat.','.$online_driver->long.'&key=AIzaSyDoVmHrVkO68EObrVfhWrzgbAHHPQ9McMM');
+            $json_response = json_decode($response);
+           
+              if($json_response->status == "OK"){
+            $routes = $json_response->routes;
+            
+            foreach($routes as $route){
+                $legs = $route->legs;
+                foreach($legs as $leg){
+                    $distance = $leg->distance->value/1000;
+                    $duration = $leg->duration->value/60;
+                    $esttime = $leg->duration->text;
+                }
+            }
+            
+            $data = [
+                'distance'=>$distance,
+                'duration'=>$duration,
+                'esttime'=>$esttime,
+                'status'=>$json_response->status,
+                'driver_id'=>$online_driver->driver_id
+                ];
+           array_push($arr,$data);
+                
+                
+        }
+        else{
+            $data = [
+                'distance'=> "0",
+                'duration'=> "0",
+                'esttime'=> "0",
+                'status'=>$online_driver->driver_id
+                ];
+        }
+            // array_push($arr,$json_response)
+            
+            // $data[] = $online_driver;
+        }
+        return $arr;
+        return $data;
+    }
